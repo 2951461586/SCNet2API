@@ -1,5 +1,8 @@
 # SCNet2API
 
+[![ci](https://github.com/2951461586/SCNet2API/actions/workflows/ci.yml/badge.svg)](https://github.com/2951461586/SCNet2API/actions/workflows/ci.yml)
+[![Go](https://img.shields.io/badge/Go-1.24-00ADD8?logo=go&logoColor=white)](https://go.dev)
+
 把本机 **SCNet（超算互联网）客户端「计算服务」** 的上游模型服务，逆向复刻成一个
 **OpenAI / Anthropic 双协议兼容的 Go 网关**。
 

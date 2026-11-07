@@ -1,0 +1,52 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v4.2.2, pinned to commit SHA.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      # actions/setup-go v5, pinned to commit SHA.
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: gofmt
+        run: |
+          out=$(gofmt -l .)
+          if [ -n "$out" ]; then
+            echo "unformatted files:"
+            echo "$out"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: build
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          go build ./...
+          go build -trimpath -ldflags "-s -w" -o /tmp/scnet2api .
+          go build -trimpath -ldflags "-s -w" -o /tmp/scnet2api-probe \
+            ./cmd/probe
+
+      - name: test
+        run: go test -race -count=1 ./...
+
+      - name: vulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+        continue-on-error: true
