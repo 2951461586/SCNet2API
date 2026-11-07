@@ -1,0 +1,18 @@
+# 构建产物
+/bin/
+*.exe
+*.exe~
+/scnet2api
+/probe
+
+# 运行期状态（含上游会话与 API Key，绝不入库）
+.env
+/data/
+*-data.json
+*-logs.jsonl
+*-stats.json
+*.log
+
+# 测试 / 临时
+/tmp/
+*.test

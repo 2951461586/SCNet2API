@@ -1,0 +1,10 @@
+.git
+bin
+*.exe
+*.exe~
+data/
+.env
+*.log
+*.jsonl
+*-data.json
+*-stats.json

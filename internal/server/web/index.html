@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SCNet2API 控制台</title>
+<style>
+  :root {
+    --bg: #0b1016;
+    --bg-soft: #111823;
+    --panel: #131c28;
+    --panel-2: #17222f;
+    --line: #24344a;
+    --text: #e6edf6;
+    --muted: #8ea1b8;
+    --accent: #35d6c0;
+    --accent-2: #4aa8ff;
+    --warn: #f5b942;
+    --bad: #ff6b6b;
+    --good: #3ddc84;
+    --radius: 12px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: radial-gradient(1200px 600px at 80% -10%, #163044 0%, var(--bg) 55%) fixed;
+    color: var(--text);
+    font: 14px/1.55 -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  a { color: var(--accent-2); text-decoration: none; }
+  code, .mono { font-family: var(--mono); }
+  header.top {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 22px; border-bottom: 1px solid var(--line);
+    background: rgba(11,16,22,.82); backdrop-filter: blur(10px);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .3px; }
+  .brand .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+  .brand small { color: var(--muted); font-weight: 500; margin-left: 6px; }
+  .grow { flex: 1; }
+  .layout { display: flex; min-height: calc(100vh - 57px); }
+  nav.side {
+    width: 190px; padding: 18px 12px; border-right: 1px solid var(--line);
+    background: rgba(17,24,35,.55); position: sticky; top: 57px; height: calc(100vh - 57px);
+  }
+  nav.side button {
+    display: block; width: 100%; text-align: left; padding: 10px 12px; margin-bottom: 4px;
+    background: transparent; border: 0; color: var(--muted); border-radius: 9px;
+    cursor: pointer; font-size: 14px;
+  }
+  nav.side button:hover { background: var(--panel-2); color: var(--text); }
+  nav.side button.active { background: linear-gradient(90deg, rgba(53,214,192,.16), transparent); color: var(--accent); font-weight: 600; }
+  main { flex: 1; padding: 22px 26px 60px; max-width: 1240px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+  .grid { display: grid; gap: 14px; }
+  .cards { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+  .card {
+    background: linear-gradient(180deg, var(--panel), var(--bg-soft));
+    border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px;
+  }
+  .card .label { color: var(--muted); font-size: 12px; letter-spacing: .4px; text-transform: uppercase; }
+  .card .value { font-size: 26px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .card .hint { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .panel { background: var(--bg-soft); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-top: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 9px 10px; border-bottom: 1px solid rgba(36,52,74,.5); vertical-align: middle; }
+  tr:hover td { background: rgba(23,34,47,.6); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; border: 1px solid transparent; white-space: nowrap; }
+  .ok { color: var(--good); border-color: rgba(61,220,132,.35); background: rgba(61,220,132,.08); }
+  .err { color: var(--bad); border-color: rgba(255,107,107,.35); background: rgba(255,107,107,.08); }
+  .warn { color: var(--warn); border-color: rgba(245,185,66,.35); background: rgba(245,185,66,.08); }
+  .off { color: var(--muted); border-color: var(--line); background: rgba(142,161,184,.06); }
+  .btn {
+    cursor: pointer; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--panel-2); color: var(--text); padding: 7px 12px; font-size: 13px;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.primary { background: linear-gradient(135deg, #27bba8, #2f8fe0); border-color: transparent; color: #04121a; font-weight: 700; }
+  .btn.primary:hover { filter: brightness(1.08); color: #04121a; }
+  .btn.danger:hover { border-color: var(--bad); color: var(--bad); }
+  .btn.small { padding: 4px 8px; font-size: 12px; }
+  input, select, textarea {
+    background: #0e151e; border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; padding: 8px 10px; font: inherit; width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-2); }
+  textarea { min-height: 88px; font-family: var(--mono); font-size: 12px; }
+  label.field { display: block; margin-bottom: 10px; }
+  label.field span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .row > * { flex: 1; min-width: 140px; }
+  .row .btn { flex: 0 0 auto; }
+  .muted { color: var(--muted); }
+  .mono-sm { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .toast {
+    position: fixed; right: 20px; bottom: 20px; z-index: 50; max-width: 420px;
+    background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+    padding: 12px 16px; border-radius: 10px; box-shadow: 0 16px 40px rgba(0,0,0,.5);
+    opacity: 0; transform: translateY(8px); transition: .2s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: none; }
+  .toast.bad { border-left-color: var(--bad); }
+  .empty { padding: 26px; text-align: center; color: var(--muted); }
+  .hidden { display: none !important; }
+  .login-gate {
+    position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+    background: rgba(6,9,13,.86); backdrop-filter: blur(4px);
+  }
+  .login-gate .box { width: 360px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+  .search-results { margin-top: 12px; display: grid; gap: 10px; }
+  .search-results .hit { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--panel); }
+  .search-results .hit b { color: var(--accent); }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 860px) {
+    nav.side { display: none; }
+    .split { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="dot"></span>SCNet2API<small id="ver"></small></div>
+  <div class="grow"></div>
+  <span id="conn" class="badge off">连接中…</span>
+  <button class="btn small" onclick="reload(true)">刷新</button>
+</header>
+
+<div class="layout">
+  <nav class="side" id="nav">
+    <button data-tab="overview" class="active">总览</button>
+    <button data-tab="accounts">账号</button>
+    <button data-tab="keys">网关密钥</button>
+    <button data-tab="models">模型</button>
+    <button data-tab="logs">日志</button>
+    <button data-tab="settings">设置</button>
+  </nav>
+  <main>
+    <section id="tab-overview"></section>
+    <section id="tab-accounts" class="hidden"></section>
+    <section id="tab-keys" class="hidden"></section>
+    <section id="tab-models" class="hidden"></section>
+    <section id="tab-logs" class="hidden"></section>
+    <section id="tab-settings" class="hidden"></section>
+  </main>
+</div>
+
+<div class="login-gate hidden" id="gate">
+  <div class="box">
+    <h2>管理口令</h2>
+    <p class="muted" style="margin-top:0">控制台接口需要管理密码（启动参数 -admin-password 或环境变量 SCNET2API_ADMIN_PASSWORD）。</p>
+    <label class="field"><span>密码</span><input id="pw" type="password" autocomplete="current-password" /></label>
+    <button class="btn primary" style="width:100%" onclick="submitPassword()">进入控制台</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (sel) => document.querySelector(sel);
+const state = { tab: 'overview', data: null, logs: [], models: [], timer: null };
+let adminPassword = localStorage.getItem('scnet2api_admin') || '';
+
+function esc(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+// mount 用 DOMParser 解析 HTML 片段后挂载，避免任何 innerHTML 赋值。
+// 所有插值都必须先经过 esc()（见各模板）。
+function mount(target, html) {
+  const el = typeof target === 'string' ? document.querySelector(target) : target;
+  if (!el) return;
+  const doc = new DOMParser().parseFromString('<body>' + html + '</body>', 'text/html');
+  const nodes = Array.from(doc.body.childNodes, (n) => document.importNode(n, true));
+  el.replaceChildren(...nodes);
+}
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts * 1000);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+function num(n) { return Number(n || 0).toLocaleString('en-US'); }
+function ago(ts) {
+  if (!ts) return '—';
+  const s = Math.max(0, Math.floor(Date.now() / 1000) - ts);
+  if (s < 60) return s + ' 秒前';
+  if (s < 3600) return Math.floor(s / 60) + ' 分钟前';
+  if (s < 86400) return Math.floor(s / 3600) + ' 小时前';
+  return Math.floor(s / 86400) + ' 天前';
+}
+function toast(msg, bad) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (bad ? ' bad' : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = 'toast'; }, 3600);
+}
+
+async function api(path, opts = {}) {
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+  if (adminPassword) headers['X-Admin-Password'] = adminPassword;
+  const res = await fetch(path, Object.assign({}, opts, { headers }));
+  if (res.status === 401) {
+    showGate();
+    throw new Error('需要管理口令');
+  }
+  let body = null;
+  const text = await res.text();
+  try { body = text ? JSON.parse(text) : null; } catch { body = text; }
+  if (!res.ok) {
+    const msg = body && body.error ? body.error.message : (typeof body === 'string' ? body : res.statusText);
+    throw new Error(msg || ('HTTP ' + res.status));
+  }
+  return body;
+}
+
+function showGate() { $('#gate').classList.remove('hidden'); setTimeout(() => $('#pw').focus(), 40); }
+function submitPassword() {
+  adminPassword = $('#pw').value;
+  localStorage.setItem('scnet2api_admin', adminPassword);
+  $('#gate').classList.add('hidden');
+  reload(true);
+}
+
+/* ---------------- 导航 ---------------- */
+$('#nav').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-tab]');
+  if (!btn) return;
+  switchTab(btn.dataset.tab);
+});
+function switchTab(tab) {
+  state.tab = tab;
+  document.querySelectorAll('#nav button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('main > section').forEach((s) => s.classList.add('hidden'));
+  $('#tab-' + tab).classList.remove('hidden');
+  render();
+  if (tab === 'logs') loadLogs();
+  if (tab === 'overview') loadOverview();
+}
+
+/* ---------------- 数据加载 ---------------- */
+async function reload(showToast) {
+  try {
+    const [st, ov, md] = await Promise.all([
+      api('/admin/api/state'),
+      api('/admin/api/overview'),
+      api('/admin/api/models'),
+    ]);
+    state.data = st;
+    state.overview = ov;
+    state.models = md.models || [];
+    state.defaultModel = md.default_model;
+    $('#ver').textContent = st.version ? 'v' + st.version : '';
+    const conn = $('#conn');
+    conn.className = 'badge ok';
+    conn.textContent = `${st.accounts.length} 账号 · ${st.models.length} 模型`;
+    if (st.encrypted) conn.textContent += ' · 已加密';
+    render();
+    if (showToast) toast('已刷新');
+  } catch (e) {
+    const conn = $('#conn');
+    conn.className = 'badge err';
+    conn.textContent = e.message;
+    if (e.message !== '需要管理口令') toast(e.message, true);
+  }
+}
+
+async function loadOverview() {
+  try { state.overview = await api('/admin/api/overview'); render(); } catch (e) { /* handled */ }
+}
+async function loadLogs() {
+  try {
+    const limit = Number($('#logLimit') ? $('#logLimit').value : 200);
+    const res = await api('/admin/api/logs?limit=' + limit);
+    state.logs = res.logs || [];
+    renderLogs();
+  } catch (e) { toast(e.message, true); }
+}
+
+/* ---------------- 渲染 ---------------- */
+function render() {
+  if (!state.data) return;
+  renderOverview();
+  renderAccounts();
+  renderKeys();
+  renderModels();
+  renderSettings();
+}
+
+function renderOverview() {
+  const st = state.data, ov = state.overview || {};
+  const stats = st.stats || {};
+  const accounts = st.accounts || [];
+  const ready = accounts.filter((a) => a.enabled && a.status !== 'error').length;
+  const owing = accounts.filter((a) => a.balance && a.balance.unpaid).length;
+  const freeModels = (st.models || []).filter((m) => m.free).length;
+  mount('#tab-overview', `
+    <h1>总览</h1>
+    <div class="sub">SCNet（超算互联网）模型服务 · OpenAI / Anthropic 双协议网关</div>
+    <div class="grid cards">
+      <div class="card"><div class="label">账号</div><div class="value">${accounts.length}</div><div class="hint">就绪 ${ready} · 欠费 ${owing}</div></div>
+      <div class="card"><div class="label">模型</div><div class="value">${(st.models || []).length}</div><div class="hint">免费 ${freeModels} · 默认 ${esc(st.default_model)}</div></div>
+      <div class="card"><div class="label">请求</div><div class="value">${num(stats.total_requests)}</div><div class="hint">失败 ${num(stats.failed_requests)}</div></div>
+      <div class="card"><div class="label">Token</div><div class="value">${num(stats.total_tokens_out)}</div><div class="hint">输入 ${num(stats.total_tokens_in)} · 输出</div></div>
+      <div class="card"><div class="label">网关密钥</div><div class="value">${(st.keys || []).length}</div><div class="hint">状态文件${st.encrypted ? '已加密' : '明文'}</div></div>
+      <div class="card"><div class="label">目录更新</div><div class="value" style="font-size:16px">${ago(st.models_updated)}</div><div class="hint">模型目录</div></div>
+    </div>
+
+    <div class="panel">
+      <h2>快速开始</h2>
+      <div class="muted" style="margin-bottom:8px">任选其一，密钥在「网关密钥」页签发。</div>
+      <pre class="mono-sm" style="white-space:pre-wrap;margin:0">export OPENAI_BASE_URL=http://127.0.0.1:10088/v1
+export OPENAI_API_KEY=sk-scnet-...
+export ANTHROPIC_BASE_URL=http://127.0.0.1:10088
+export ANTHROPIC_API_KEY=sk-scnet-...</pre>
+    </div>
+
+    <div class="split">
+      <div class="panel">
+        <h2>联网搜索（上游 bocha）</h2>
+        <div class="row">
+          <input id="searchQ" placeholder="输入查询，例如：超算互联网 最新动态" />
+          <input id="searchN" type="number" value="5" min="1" max="20" style="max-width:90px" />
+          <button class="btn primary" onclick="runSearch()">搜索</button>
+        </div>
+        <div id="searchOut" class="search-results"></div>
+      </div>
+      <div class="panel">
+        <h2>账号余额</h2>
+        ${accounts.length ? accounts.map((a) => `
+          <div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid rgba(36,52,74,.5)">
+            <span>${esc(a.name)}</span>
+            <span class="mono-sm">${a.balance ? esc(a.balance.balance || '—') + ' CNY' : '未探测'}</span>
+            <span class="badge ${a.balance && a.balance.unpaid ? 'warn' : 'ok'}">${a.balance && a.balance.unpaid ? '欠费' : '正常'}</span>
+          </div>`).join('') : '<div class="empty">还没有账号</div>'}
+      </div>
+    </div>`);
+}
+
+async function runSearch() {
+  const q = $('#searchQ').value.trim();
+  if (!q) return toast('请输入查询内容', true);
+  const out = $('#searchOut');
+  mount(out, '<div class="muted">搜索中…</div>');
+  try {
+    const res = await api('/admin/api/search', {
+      method: 'POST',
+      body: JSON.stringify({ query: q, count: Number($('#searchN').value || 5), summary: true }),
+    });
+    mount(out, (res.items || []).map((it) => `
+      <div class="hit">
+        <div><b>${esc(it.title || it.url)}</b></div>
+        <div class="mono-sm"><a href="${esc(it.url)}" target="_blank" rel="noreferrer">${esc(it.url)}</a></div>
+        <div class="muted">${esc((it.summary || it.snippet || '').slice(0, 400))}</div>
+      </div>`).join('') || '<div class="empty">没有结果</div>');
+  } catch (e) {
+    mount(out, `<div class="empty">${esc(e.message)}</div>`);
+  }
+}
+
+function accountBadge(a) {
+  if (!a.enabled) return '<span class="badge off">停用</span>';
+  if (a.status === 'error') return '<span class="badge err">异常</span>';
+  if (a.status === 'ok') return '<span class="badge ok">正常</span>';
+  return '<span class="badge warn">未探测</span>';
+}
+function balanceCell(a) {
+  if (!a.balance) return '<span class="muted">未探测</span>';
+  const owing = a.balance.unpaid ? ' <span class="badge warn">欠费</span>' : '';
+  return `${esc(a.balance.balance || '—')}${owing}`;
+}
+function keyBadge(k) {
+  return k.enabled ? '<span class="badge ok">启用</span>' : '<span class="badge off">停用</span>';
+}
+function logBadge(status) {
+  if (status >= 400) return `<span class="badge err">${status}</span>`;
+  return `<span class="badge ok">${status || 200}</span>`;
+}
+
+function renderAccounts() {
+  const accounts = state.data.accounts || [];
+  const rows = accounts.map((a) => {
+    const st = accountBadge(a);
+    const bal = balanceCell(a);
+    return `<tr>
+      <td><div>${esc(a.name)}</div><div class="mono-sm">${esc(a.id)}</div></td>
+      <td>${esc(a.userName || a.user_id || '—')}<div class="mono-sm">${esc(a.source)}</div></td>
+      <td>${esc(a.group)}</td>
+      <td class="mono-sm">${esc(a.login_mode || '—')}${a.has_password ? ' <span class="badge warn">密码</span>' : ''}</td>
+      <td>${st}</td>
+      <td>${bal}</td>
+      <td class="mono-sm">${esc(a.api_key_mask || '无凭据')}<div>${esc(a.key_source || '')}</div></td>
+      <td class="mono-sm">${a.has_session ? ago(a.session_at) : '无会话'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn small" onclick="accountAction('${esc(a.id)}','refresh')">刷新</button>
+        <button class="btn small" onclick="accountAction('${esc(a.id)}','probe')">探测</button>
+        <button class="btn small" onclick="accountAction('${esc(a.id)}','${a.enabled ? 'disable' : 'enable'}')">${a.enabled ? '停用' : '启用'}</button>
+        <button class="btn small danger" onclick="accountAction('${esc(a.id)}','delete')">删除</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const warn = (state.data.password_creds || 0) > 0 && !state.data.encrypted;
+  mount('#tab-accounts', `
+    <h1>账号</h1>
+    <div class="sub">每个账号 = 一个 SCNet 登录态 + 自动创建的模型 API Key。支持 desktopToken / 账号密码 / 手机号验证码。</div>
+    ${warn ? `<div class="panel" style="border-color:rgba(245,185,66,.5)"><b style="color:var(--warn)">⚠ 已保存账号密码但状态文件未加密</b>
+      <div class="muted">密码以明文落盘。请在「设置」或 .env 配置 SCNET2API_MASTER_KEY 后执行 <code>scnet2api -seal -yes</code>。</div></div>` : ''}
+    <div class="panel">
+      <h2>① desktopToken 登录</h2>
+      <label class="field"><span>desktopToken（桌面端 config.json 的 accessToken，或 SCNET_SESSION_TOKEN）</span>
+        <textarea id="addToken" placeholder="粘贴 accessToken…"></textarea></label>
+      <div class="row">
+        <label class="field"><span>名称（可选）</span><input id="addName" placeholder="my-account" /></label>
+        <label class="field"><span>分组（可选）</span><input id="addGroup" placeholder="default" /></label>
+        <button class="btn primary" onclick="addAccount()">登录并取 Key</button>
+        <button class="btn" onclick="importDesktop()">从桌面端导入</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>② 账号密码登录（可自动续期）</h2>
+      <div class="row">
+        <label class="field"><span>账号</span><input id="pwUser" placeholder="登录账号" autocomplete="username" /></label>
+        <label class="field"><span>密码</span><input id="pwPass" type="password" placeholder="登录密码" autocomplete="current-password" /></label>
+        <label class="field"><span>名称（可选）</span><input id="pwName" placeholder="my-account" /></label>
+        <label class="field"><span>分组（可选）</span><input id="pwGroup" placeholder="default" /></label>
+        <button class="btn primary" onclick="addPasswordAccount()">登录并取 Key</button>
+      </div>
+      <div class="muted">密码会用客户端内置 RSA 公钥加密后提交；是否落盘取决于「设置 → 状态文件加密」。</div>
+    </div>
+    <div class="panel">
+      <h2>③ 手机号验证码登录</h2>
+      <div class="row">
+        <label class="field"><span>手机号</span><input id="phoneNum" placeholder="11 位手机号" autocomplete="tel" /></label>
+        <button class="btn" onclick="sendPhoneCode()">发送验证码</button>
+        <label class="field"><span>验证码</span><input id="phoneCode" placeholder="短信验证码" /></label>
+        <label class="field"><span>名称（可选）</span><input id="phoneName" placeholder="my-account" /></label>
+        <label class="field"><span>分组（可选）</span><input id="phoneGroup" placeholder="default" /></label>
+        <button class="btn primary" onclick="verifyPhone()">验证并添加</button>
+      </div>
+      <div class="muted" id="phoneHint">验证码 5 分钟内有效；手机号登录只保存会话，不会保存密码。</div>
+    </div>
+    <div class="panel">
+      <h2>账号列表</h2>
+      ${accounts.length ? `<table><thead><tr>
+        <th>账号</th><th>平台用户</th><th>分组</th><th>登录方式</th><th>状态</th><th>余额</th><th>模型 Key</th><th>会话</th><th>操作</th>
+      </tr></thead><tbody>${rows}</tbody></table>` : '<div class="empty">还没有账号。先在本机登录「计算服务」，再点「从桌面端导入」。</div>'}
+    </div>`);
+}
+
+async function addAccount() {
+  const token = $('#addToken').value.trim();
+  if (!token) return toast('请粘贴 desktopToken', true);
+  try {
+    toast('正在登录并创建模型 Key…');
+    const res = await api('/admin/api/accounts', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'add', desktop_token: token, name: $('#addName').value.trim(), group: $('#addGroup').value.trim() }),
+    });
+    toast('账号已就绪：' + (res.account ? res.account.name : ''));
+    reload();
+  } catch (e) { toast(e.message, true); }
+}
+let phoneChallenge = null;
+async function addPasswordAccount() {
+  const username = $('#pwUser').value.trim();
+  const password = $('#pwPass').value;
+  if (!username || !password) return toast('请填写账号与密码', true);
+  try {
+    toast('正在登录并创建模型 Key…');
+    const res = await api('/admin/api/accounts', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'add', username, password, name: $('#pwName').value.trim(), group: $('#pwGroup').value.trim() }),
+    });
+    $('#pwPass').value = '';
+    toast('账号已就绪：' + (res.account ? res.account.name : ''));
+    reload();
+  } catch (e) { toast(e.message, true); }
+}
+async function sendPhoneCode() {
+  const phone = $('#phoneNum').value.trim();
+  if (!phone) return toast('请输入手机号', true);
+  try {
+    const res = await api('/admin/api/login/phone/send', { method: 'POST', body: JSON.stringify({ phone }) });
+    phoneChallenge = res.challenge;
+    const hint = $('#phoneHint');
+    if (hint) hint.textContent = `验证码已发送至 ${res.phone}，${Math.round((res.expires_in || 300) / 60)} 分钟内有效。`;
+    toast('验证码已发送');
+  } catch (e) { toast(e.message, true); }
+}
+async function verifyPhone() {
+  if (!phoneChallenge) return toast('请先发送验证码', true);
+  const code = $('#phoneCode').value.trim();
+  if (!code) return toast('请输入验证码', true);
+  try {
+    toast('正在验证并创建模型 Key…');
+    const res = await api('/admin/api/login/phone/verify', {
+      method: 'POST',
+      body: JSON.stringify({ challenge: phoneChallenge, code, name: $('#phoneName').value.trim(), group: $('#phoneGroup').value.trim() }),
+    });
+    phoneChallenge = null;
+    $('#phoneCode').value = '';
+    toast('账号已就绪：' + (res.account ? res.account.name : ''));
+    reload();
+  } catch (e) { toast(e.message, true); }
+}
+async function importDesktop() {
+  try {
+    const res = await api('/admin/api/import', { method: 'POST', body: JSON.stringify({}) });
+    toast(res.imported ? `已导入 ${res.imported} 个账号` : '没有新的登录态可导入');
+    reload();
+  } catch (e) { toast(e.message, true); }
+}
+async function accountAction(id, action) {
+  if (action === 'delete' && !confirm('确认删除该账号？')) return;
+  try {
+    await api('/admin/api/accounts', { method: 'POST', body: JSON.stringify({ action, id }) });
+    toast('已执行：' + action);
+    reload();
+  } catch (e) { toast(e.message, true); }
+}
+
+function renderKeys() {
+  const keys = state.data.keys || [];
+  const rows = keys.map((k) => `<tr>
+    <td><div class="mono-sm">${esc(k.mask)}</div><div class="muted">${esc(k.name)}</div></td>
+    <td>${esc(k.group || '全部')}</td>
+    <td>${keyBadge(k)}</td>
+    <td class="mono-sm">${k.requests}</td>
+    <td class="mono-sm">${k.last_used ? ago(k.last_used) : '—'}</td>
+    <td style="white-space:nowrap">
+      <button class="btn small" onclick="copyKey('${esc(k.key)}')">复制</button>
+      <button class="btn small" onclick="keyAction('${esc(k.key)}','${k.enabled ? 'disable' : 'enable'}')">${k.enabled ? '停用' : '启用'}</button>
+      <button class="btn small danger" onclick="keyAction('${esc(k.key)}','delete')">删除</button>
+    </td>
+  </tr>`).join('');
+
+  mount('#tab-keys', `
+    <h1>网关密钥</h1>
+    <div class="sub">客户端用这些密钥访问本网关（OpenAI 的 Bearer / Anthropic 的 x-api-key）。</div>
+    <div class="panel">
+      <div class="row">
+        <label class="field"><span>名称</span><input id="keyName" placeholder="my-client" /></label>
+        <label class="field"><span>绑定分组（可选）</span><input id="keyGroup" placeholder="default" /></label>
+        <button class="btn primary" onclick="createKey()">签发密钥</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>密钥列表</h2>
+      ${keys.length ? `<table><thead><tr><th>密钥</th><th>分组</th><th>状态</th><th>请求</th><th>最近使用</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="empty">还没有密钥</div>'}
+    </div>`);
+}
+
+async function createKey() {
+  try {
+    const res = await api('/admin/api/keys', { method: 'POST', body: JSON.stringify({ name: $('#keyName').value.trim(), group: $('#keyGroup').value.trim() }) });
+    await navigator.clipboard.writeText(res.key).catch(() => {});
+    toast('已签发并复制到剪贴板：' + res.key);
+    reload();
+  } catch (e) { toast(e.message, true); }
+}
+async function copyKey(key) {
+  try { await navigator.clipboard.writeText(key); toast('已复制'); } catch { toast('复制失败', true); }
+}
+async function keyAction(key, action) {
+  if (action === 'delete' && !confirm('确认删除该密钥？')) return;
+  try {
+    await api('/admin/api/keys', { method: 'POST', body: JSON.stringify({ action, key }) });
+    toast('已执行：' + action);
+    reload();
+  } catch (e) { toast(e.message, true); }
+}
+
+function priceBadge(m) {
+  if (m.free) return '<span class="badge ok">免费</span>';
+  return `<span class="badge off">${esc(m.priceLabel || '计费')}</span>`;
+}
+
+function renderModels() {
+  const models = state.models || [];
+  const using = new Set(models.filter((m) => m.id === state.defaultModel));
+  const rows = models.map((m) => `<tr>
+    <td><div>${esc(m.name || m.id)}</div><div class="mono-sm">${esc(m.id)}</div></td>
+    <td class="mono-sm">${esc((m.brand || 'SCNetAI'))}</td>
+    <td class="mono-sm">${m.contextWindow ? num(Math.round(m.contextWindow / 1024)) + 'K' : '—'}</td>
+    <td class="mono-sm">${(m.protocols || []).map((p) => esc(p.replace('OPENAI_', 'O-'))).join(' · ')}</td>
+    <td>${priceBadge(m)}</td>
+    <td>${(m.input || []).includes('image') ? '文本+图片' : '文本'}</td>
+    <td><button class="btn small" onclick="setDefault('${esc(m.id)}')">设为默认</button></td>
+  </tr>`).join('');
+
+  mount('#tab-models', `
+    <h1>模型</h1>
+    <div class="sub">目录由上游动态下发；默认模型：<b>${esc(state.defaultModel)}</b></div>
+    <div class="panel">
+      <div class="row">
+        <button class="btn primary" onclick="refreshModels()">从上游刷新目录</button>
+        <span class="muted" style="align-self:center">当前 ${models.length} 个模型</span>
+      </div>
+    </div>
+    <div class="panel">
+      <div style="max-height:560px;overflow:auto">
+      <table><thead><tr><th>模型</th><th>厂商</th><th>上下文</th><th>协议</th><th>价格</th><th>输入</th><th>默认</th></tr></thead><tbody>${rows}</tbody></table>
+      </div>
+    </div>`);
+}
+
+async function refreshModels() {
+  try {
+    toast('正在刷新模型目录…');
+    await api('/admin/api/models', { method: 'POST', body: JSON.stringify({ action: 'refresh' }) });
+    toast('目录已刷新');
+    reload();
+  } catch (e) { toast(e.message, true); }
+}
+async function setDefault(id) {
+  try {
+    await api('/admin/api/models', { method: 'POST', body: JSON.stringify({ action: 'default', default_model: id }) });
+    toast('默认模型：' + id);
+    reload();
+  } catch (e) { toast(e.message, true); }
+}
+
+function renderLogs() {
+  const logs = state.logs || [];
+  const rows = [...logs].reverse().map((l) => `<tr>
+    <td class="mono-sm">${fmtTime(l.time)}</td>
+    <td>${esc(l.endpoint)}${l.stream ? ' <span class="badge off">SSE</span>' : ''}</td>
+    <td class="mono-sm">${esc(l.model)}</td>
+    <td>${esc(l.account)}</td>
+    <td>${logBadge(l.status)}</td>
+    <td class="mono-sm">${l.latency_ms} ms</td>
+    <td class="mono-sm">${l.tokens_in || 0}/${l.tokens_out || 0}</td>
+    <td class="mono-sm" style="max-width:280px;overflow:hidden;text-overflow:ellipsis">${esc(l.err || '')}</td>
+  </tr>`).join('');
+
+  if (!$('#logLimit')) {
+    mount('#tab-logs', `
+      <h1>日志</h1>
+      <div class="sub">只记录元信息，不落对话内容。</div>
+      <div class="panel">
+        <div class="row">
+          <label class="field" style="max-width:160px"><span>条数</span>
+            <select id="logLimit" onchange="loadLogs()">
+              <option>100</option><option selected>200</option><option>500</option><option>1000</option>
+            </select></label>
+          <button class="btn" onclick="loadLogs()">刷新</button>
+        </div>
+      </div>
+      <div class="panel" id="logTable"></div>`);
+  }
+  mount('#logTable', logs.length
+    ? `<div style="max-height:600px;overflow:auto"><table><thead><tr><th>时间</th><th>端点</th><th>模型</th><th>账号</th><th>状态</th><th>耗时</th><th>token</th><th>错误</th></tr></thead><tbody>${rows}</tbody></table></div>`
+    : '<div class="empty">暂无日志</div>');
+}
+
+function renderSettings() {
+  const s = state.data.settings || {};
+  mount('#tab-settings', `
+    <h1>设置</h1>
+    <div class="sub">修改后立即生效并落盘。</div>
+    <div class="panel">
+      <div class="row">
+        <label class="field" style="max-width:150px"><span>请求超时（秒）</span><input id="setTimeout" type="number" value="${Number(s.request_timeout || 600)}" /></label>
+        <label class="field" style="max-width:130px"><span>最大重试</span><input id="setRetries" type="number" value="${Number(s.max_retries || 3)}" /></label>
+        <label class="field" style="max-width:130px"><span>日志保留</span><input id="setLogKeep" type="number" value="${Number(s.log_keep || 500)}" /></label>
+        <label class="field" style="max-width:150px"><span>探测周期（分）</span><input id="setProbe" type="number" value="${Number(s.probe_minutes || 15)}" /></label>
+        <label class="field" style="max-width:150px"><span>会话保活（分）</span><input id="setSession" type="number" value="${Number(s.session_minutes || 20)}" /></label>
+      </div>
+      <label class="field"><span>兜底模型（无法识别的模型名回落到它）</span><input id="setFallback" value="${esc(s.fallback_model || '')}" /></label>
+      <label class="field"><span>模型别名（JSON：{"gpt-4o":"SCNet-Max"}）</span><textarea id="setAliases">${esc(JSON.stringify(s.model_aliases || {}, null, 2))}</textarea></label>
+      <label class="field"><span>CORS 允许源（逗号分隔；留空 = 仅本机回环）</span><input id="setCORS" value="${esc(s.cors_origin || '')}" /></label>
+      <label class="field"><span>管理密码（留空表示不修改）</span><input id="setPassword" type="password" placeholder="${s.has_password ? '已设置' : '未设置'}" /></label>
+      <div class="row">
+        <button class="btn primary" onclick="saveSettings()">保存设置</button>
+        <button class="btn danger" onclick="resetStats()">重置统计</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>运行信息</h2>
+      <div class="mono-sm" style="line-height:1.9">
+        版本：${esc(state.data.version || 'dev')}<br/>
+        状态文件：${state.data.master_key ? 'AES-256-GCM 加密' : '明文'}<br/>
+        模型目录更新：${fmtTime(state.data.models_updated)}<br/>
+        统计起始：${fmtTime((state.data.stats || {}).started_at)}
+      </div>
+    </div>`);
+}
+
+async function saveSettings() {
+  let aliases = {};
+  try { aliases = JSON.parse($('#setAliases').value || '{}'); } catch { return toast('模型别名不是合法 JSON', true); }
+  const body = {
+    model_aliases: aliases,
+    request_timeout: Number($('#setTimeout').value || 600),
+    max_retries: Number($('#setRetries').value || 3),
+    log_keep: Number($('#setLogKeep').value || 500),
+    fallback_model: $('#setFallback').value.trim(),
+    cors_origin: $('#setCORS').value.trim(),
+    probe_minutes: Number($('#setProbe').value || 15),
+    session_minutes: Number($('#setSession').value || 20),
+  };
+  const pw = $('#setPassword').value;
+  if (pw) body.admin_password = pw;
+  try {
+    await api('/admin/api/settings', { method: 'POST', body: JSON.stringify(body) });
+    if (pw) { adminPassword = pw; localStorage.setItem('scnet2api_admin', pw); }
+    toast('设置已保存');
+    reload();
+  } catch (e) { toast(e.message, true); }
+}
+async function resetStats() {
+  if (!confirm('确认重置累计统计？')) return;
+  try {
+    await api('/admin/api/stats', { method: 'POST', body: '{}' });
+    toast('统计已重置');
+    reload();
+  } catch (e) { toast(e.message, true); }
+}
+
+/* ---------------- 启动 ---------------- */
+reload();
+setInterval(() => {
+  if (state.tab === 'overview') loadOverview();
+}, 20000);
+</script>
+</body>
+</html>
